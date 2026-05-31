@@ -288,6 +288,17 @@ select{-webkit-appearance:none;appearance:none;}
 
 /* ── BADGE dernier mois ── */
 .last-badge{font-size:.68rem;font-weight:600;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+/* ── RÉFÉRENTIEL MODAL ── */
+.ref-section-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:8px;}
+.ref-table{width:100%;border-collapse:collapse;font-size:.83rem;margin-bottom:14px;}
+.ref-table th{text-align:left;padding:7px 10px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);border-bottom:2px solid var(--border2);background:var(--surface2);}
+.ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top;line-height:1.45;}
+.ref-table tr:last-child td{border-bottom:none;}
+.ref-var{font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--accent);white-space:nowrap;width:46px;}
+.ref-formula{font-family:var(--mono);font-size:.78rem;color:var(--text);line-height:1.6;}
+.ref-rate{font-family:var(--mono);font-weight:600;color:var(--orange);text-align:right;}
+.ref-row-accent td{background:var(--accent-dim);}
+.ref-row-net td{background:var(--total-bg);font-weight:600;}
 </style>
 </head>
 <body>
@@ -308,6 +319,7 @@ select{-webkit-appearance:none;appearance:none;}
       <button class="icon-btn" onclick="exportJSON()" title="Exporter les données (JSON)">⬇️</button>
       <button class="icon-btn" onclick="document.getElementById('import-input').click()" title="Importer des données (JSON)">⬆️</button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+      <button class="icon-btn" onclick="openRef()" title="Référentiel des formules">📐</button>
       <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Thème">🌙</button>
     </div>
   </div>
@@ -372,8 +384,9 @@ select{-webkit-appearance:none;appearance:none;}
       </div>
       <input class="year-input" type="number" id="year-saisie" style="width:100px;height:40px;font-size:.95rem" oninput="onYearChange('saisie')">
     </div>
-    <div id="last-month-notice" style="display:none;margin-bottom:10px;padding:8px 14px;background:var(--accent-bg);border:1px solid var(--border2);border-radius:var(--rs);font-size:.82rem;color:var(--text2);">
-      💡 Valeurs pré-remplies depuis <span id="last-month-name" style="font-weight:600;color:var(--accent)"></span>
+    <div id="last-month-notice" style="display:none;margin-bottom:10px;padding:8px 14px;background:var(--accent-bg);border:1px solid var(--border2);border-radius:var(--rs);font-size:.82rem;color:var(--text2);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span>💡 Valeurs pré-remplies depuis <span id="last-month-name" style="font-weight:600;color:var(--accent)"></span></span>
+      <button onclick="acceptAllDefaults()" style="margin-left:auto;padding:5px 14px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">✓ Tout accepter</button>
     </div>
     <div class="card">
       <div class="summary">
@@ -395,7 +408,7 @@ select{-webkit-appearance:none;appearance:none;}
       <div class="row bold"><span class="row-label">Net avant impôt</span>       <span class="row-value" id="r-b9">—</span></div>
       <div class="row"><span class="row-label">Revenu net imposable</span>       <span class="row-value" id="r-b10">—</span></div>
       <div class="section-title">Prélèvement à la source</div>
-      <div class="input-row"><span class="input-label">Taux prélèvement</span><div class="input-wrap"><input type="number" step="0.001" min="0" max="1" id="f-tauxPAS" oninput="calc()"><span class="input-unit" id="pct-display">%</span></div></div>
+      <div class="input-row"><span class="input-label">Taux prélèvement</span><div class="input-wrap"><input type="number" step="0.1" min="0" max="100" id="f-tauxPAS" placeholder="ex : 12,7" oninput="calc()"><span class="input-unit">%</span></div></div>
       <div class="row"><span class="row-label">Prélèvement à la source</span><span class="row-value" id="r-b12">—</span></div>
       <div class="row total"><span class="row-label">Net à payer</span><span class="row-value" id="r-b13">—</span></div>
       <div class="bulletin-wrap">
@@ -434,6 +447,100 @@ select{-webkit-appearance:none;appearance:none;}
     </div>
   </div>
 
+</div>
+
+<!-- Modal Référentiel -->
+<div id="ref-modal" onclick="if(event.target===this)closeRef()" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);max-width:640px;width:100%;box-shadow:var(--shadow-md);margin:auto;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border);">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--text);">📐 Référentiel des formules</div>
+      <button onclick="closeRef()" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+    </div>
+    <!-- Variables d'entrée -->
+    <div style="padding:16px 20px 0;">
+      <div class="ref-section-title">Variables saisies</div>
+      <table class="ref-table">
+        <thead><tr><th>Référence</th><th>Intitulé</th><th>Unité</th></tr></thead>
+        <tbody>
+          <tr><td class="ref-var">B1</td><td>Plafond mensuel sécurité sociale</td><td>€</td></tr>
+          <tr><td class="ref-var">B2</td><td>Brut pension statutaire</td><td>€</td></tr>
+          <tr><td class="ref-var">B3</td><td>Indemnité avantage en nature</td><td>€</td></tr>
+          <tr><td class="ref-var">B5</td><td>Valeur fiscale avantage en nature</td><td>€</td></tr>
+          <tr><td class="ref-var">B11</td><td>Taux prélèvement à la source (saisi en %)</td><td>%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Formules calculées -->
+    <div style="padding:14px 20px 0;">
+      <div class="ref-section-title">Champs calculés</div>
+      <table class="ref-table">
+        <thead><tr><th>Référence</th><th>Intitulé</th><th>Formule</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="ref-var">B4</td>
+            <td>Brut total</td>
+            <td class="ref-formula">B2 + B3</td>
+          </tr>
+          <tr>
+            <td class="ref-var">B6</td>
+            <td>Cotisations déductibles</td>
+            <td class="ref-formula">−( ARRONDI((B2+B3+B5) × 5,9 / 100 ; 2)<br>+ ARRONDI((B1 × 1,55) × 2,25 / 100 ; 2) )</td>
+          </tr>
+          <tr>
+            <td class="ref-var">B7</td>
+            <td>Cotisations non déductibles</td>
+            <td class="ref-formula">−ARRONDI( (B2+B3+B5) × (2,4 + 0,5 + 0,3) / 100 ; 2 )</td>
+          </tr>
+          <tr>
+            <td class="ref-var">B8</td>
+            <td>Total cotisations</td>
+            <td class="ref-formula">B6 + B7</td>
+          </tr>
+          <tr class="ref-row-accent">
+            <td class="ref-var">B9</td>
+            <td><strong>Net avant impôt</strong></td>
+            <td class="ref-formula">B4 + B8</td>
+          </tr>
+          <tr>
+            <td class="ref-var">B10</td>
+            <td>Revenu net imposable</td>
+            <td class="ref-formula">B4 + B6 + B5 − B3</td>
+          </tr>
+          <tr>
+            <td class="ref-var">B12</td>
+            <td>Prélèvement à la source</td>
+            <td class="ref-formula">−ARRONDI( B10 × (B11 / 100) ; 2 )</td>
+          </tr>
+          <tr class="ref-row-net">
+            <td class="ref-var">B13</td>
+            <td><strong>Net à payer</strong></td>
+            <td class="ref-formula">B2 + B3 + B8 + B12</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Taux détaillés -->
+    <div style="padding:14px 20px 0;">
+      <div class="ref-section-title">Détail des taux appliqués</div>
+      <table class="ref-table">
+        <thead><tr><th>Cotisation</th><th>Base</th><th>Taux</th><th>Nature</th></tr></thead>
+        <tbody>
+          <tr><td>RAFP / retraite complémentaire</td><td>B2+B3+B5</td><td class="ref-rate">5,90 %</td><td>Déductible</td></tr>
+          <tr><td>CNRACL / cotisation retraite (plafonnée)</td><td>B1 × 1,55</td><td class="ref-rate">2,25 %</td><td>Déductible</td></tr>
+          <tr><td>CSG déductible</td><td>B2+B3+B5</td><td class="ref-rate">2,40 %</td><td>Non déductible</td></tr>
+          <tr><td>CRDS</td><td>B2+B3+B5</td><td class="ref-rate">0,50 %</td><td>Non déductible</td></tr>
+          <tr><td>CSG non déductible</td><td>B2+B3+B5</td><td class="ref-rate">0,30 %</td><td>Non déductible</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Note -->
+    <div style="padding:14px 20px 20px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px 14px;font-size:.8rem;color:var(--text2);line-height:1.6;">
+        <strong style="color:var(--text);">Note :</strong> Les valeurs négatives de B6, B7, B8 et B12 représentent des <em>retenues</em> sur la pension brute. ARRONDI(x ; 2) désigne l'arrondi à 2 décimales.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal import -->
@@ -557,22 +664,34 @@ function loadMonth(){
   const notice=document.getElementById("last-month-notice");
 
   if(existing && existing.brutPension){
-    // Données déjà saisies : on les affiche telles quelles
-    FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el) el.value=existing[f]||""; });
+    // Données déjà saisies
+    FIELDS.forEach(f=>{
+      const el=document.getElementById("f-"+f);
+      if(!el) return;
+      if(f==="tauxPAS"){
+        // Afficher en % : utiliser tauxPASPct si dispo, sinon convertir
+        el.value = existing.tauxPASPct || (existing.tauxPAS ? String(parseFloat(existing.tauxPAS)*100) : "");
+      } else {
+        el.value = existing[f] || "";
+      }
+      el.placeholder="";
+    });
     notice.style.display="none";
   } else {
-    // Nouveau mois : chercher le dernier mois rempli
     const last=findLastFilledData(mois,annee);
     if(last){
-      // Pré-remplir en placeholder (valeurs visibles en gris via placeholder)
       FIELDS.forEach(f=>{
         const el=document.getElementById("f-"+f);
         if(!el) return;
         el.value="";
-        el.placeholder=last.data[f]||"";
+        if(f==="tauxPAS"){
+          el.placeholder = last.data.tauxPASPct || (last.data.tauxPAS ? String(parseFloat(last.data.tauxPAS)*100) : "");
+        } else {
+          el.placeholder = last.data[f] || "";
+        }
       });
       document.getElementById("last-month-name").textContent=last.label;
-      notice.style.display="block";
+      notice.style.display="flex";
     } else {
       FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el){ el.value=""; el.placeholder=""; } });
       document.getElementById("f-plafond").placeholder="3864";
@@ -584,33 +703,55 @@ function loadMonth(){
   calc();
 }
 
+function acceptAllDefaults(){
+  // Copie les placeholders dans les valeurs réelles
+  FIELDS.forEach(f=>{
+    const el=document.getElementById("f-"+f);
+    if(el && el.value==="" && el.placeholder!==""){
+      el.value=el.placeholder;
+      el.placeholder="";
+    }
+  });
+  document.getElementById("last-month-notice").style.display="none";
+  calc();
+}
+
 function onMonthChange(){ loadMonth(); }
 
 function calc(){
   const key=getKey();
-  // Lire les valeurs des inputs (si vide et placeholder présent, utiliser placeholder)
   function val(id){
     const el=document.getElementById(id);
     if(!el) return "";
     return el.value !== "" ? el.value : el.placeholder;
   }
+  const tauxPct = parseFloat(val("f-tauxPAS")) || 0;  // valeur saisie en %
   const d={
     plafond:    val("f-plafond"),
     brutPension:val("f-brutPension"),
     indemNature:val("f-indemNature"),
     valeurFisc: val("f-valeurFisc"),
-    tauxPAS:    val("f-tauxPAS"),
+    tauxPAS:    String(tauxPct / 100),  // stocké en décimal pour compatibilité calculs
+    tauxPASPct: val("f-tauxPAS"),       // stocké en % pour affichage/re-chargement
   };
 
-  // Sauvegarder seulement si des valeurs ont été tapées (pas juste des placeholders)
+  // Sauvegarder seulement si des valeurs ont été tapées
   const typed={};
-  FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el&&el.value!=="") typed[f]=el.value; });
+  FIELDS.forEach(f=>{
+    const el=document.getElementById("f-"+f);
+    if(el && el.value!==""){
+      if(f==="tauxPAS"){
+        const pct=parseFloat(el.value)||0;
+        typed.tauxPAS=String(pct/100);
+        typed.tauxPASPct=el.value;
+      } else {
+        typed[f]=el.value;
+      }
+    }
+  });
   if(Object.keys(typed).length>0){
-    allData[key]={...d,...typed}; save();
+    allData[key]={...(allData[key]||{}), ...typed}; save();
   }
-
-  const taux=parseFloat(d.tauxPAS)||0;
-  document.getElementById("pct-display").textContent=taux?(taux*100).toFixed(1)+"%":"%";
 
   if(!d.brutPension||d.brutPension===""){
     ["b4","b6","b7","b8","b9","b10","b12","b13"].forEach(id=>{ document.getElementById("r-"+id).textContent="—"; });
@@ -919,6 +1060,17 @@ function showTab(tab){
   if(tab==="tableau")    renderTableau();
   if(tab==="transposed") renderTransposed();
   if(tab==="graphiques") renderCharts();
+}
+
+/* ══ RÉFÉRENTIEL ══ */
+function openRef(){
+  const m=document.getElementById("ref-modal");
+  m.style.display="flex";
+  document.body.style.overflow="hidden";
+}
+function closeRef(){
+  document.getElementById("ref-modal").style.display="none";
+  document.body.style.overflow="";
 }
 
 /* ══ EXPORT / IMPORT ══ */
