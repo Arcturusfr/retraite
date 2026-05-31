@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pension">
+<meta name="description" content="Suivi de pension de retraite">
+<title>Pension Retraite</title>
+<script>
+const mD={name:"Suivi Pension Retraite",short_name:"Pension",start_url:"./",display:"standalone",background_color:"#f8f9fa",theme_color:"#1d4ed8",icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%231d4ed8'/><text y='130' x='96' font-size='110' text-anchor='middle'>💶</text></svg>",sizes:"192x192",type:"image/svg+xml"}]};
+document.write('<link rel="manifest" href="'+URL.createObjectURL(new Blob([JSON.stringify(mD)],{type:'application/json'}))+'">');
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font:'Inter',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+  --bg:#f0f4f8; --bg2:#ffffff; --surface:#ffffff; --surface2:#f8fafc;
+  --border:#e2e8f0; --border2:#cbd5e1;
+  --text:#1e293b; --text2:#475569; --text3:#94a3b8;
+  --accent:#1d4ed8; --accent2:#1e40af; --accent-bg:#eff6ff; --accent-dim:rgba(29,78,216,.1);
+  --red:#dc2626; --red-bg:#fef2f2; --green:#16a34a; --green-bg:#f0fdf4;
+  --orange:#ea580c; --purple:#7c3aed;
+  --header-bg:rgba(255,255,255,0.93);
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.1);
+  --r:12px; --rs:8px;
+  --frozen-bg:#f1f5f9;
+  --total-bg:#e0e7ff; --avg-bg:#fef9c3;
+}
+[data-theme="dark"] {
+  --bg:#0f172a; --bg2:#1e293b; --surface:#1e293b; --surface2:#0f172a;
+  --border:#334155; --border2:#475569;
+  --text:#f1f5f9; --text2:#94a3b8; --text3:#475569;
+  --accent:#60a5fa; --accent2:#93c5fd; --accent-bg:rgba(96,165,250,.12); --accent-dim:rgba(96,165,250,.08);
+  --red:#f87171; --red-bg:rgba(248,113,113,.12); --green:#4ade80; --green-bg:rgba(74,222,128,.12);
+  --orange:#fb923c; --purple:#a78bfa;
+  --header-bg:rgba(15,23,42,0.94);
+  --shadow:0 1px 3px rgba(0,0,0,.3); --shadow-md:0 4px 12px rgba(0,0,0,.4);
+  --frozen-bg:#1a2744; --total-bg:#1e3a5f; --avg-bg:#2d2a0f;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;font-size:16px;line-height:1.5;}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+input[type=number]{-moz-appearance:textfield;}
+select{-webkit-appearance:none;appearance:none;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── HEADER ── */
+#header{position:sticky;top:0;z-index:200;background:var(--header-bg);backdrop-filter:blur(16px) saturate(180%);-webkit-backdrop-filter:blur(16px) saturate(180%);border-bottom:1px solid var(--border);padding:0 16px;}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:10px;height:56px;}
+.app-brand{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.app-icon{font-size:1.3rem;}
+.app-title{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-.02em;}
+.nav-tabs{display:flex;gap:3px;flex:1;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.tab-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--rs);font-size:.8rem;font-weight:500;font-family:var(--font);border:1px solid transparent;background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.tab-btn:hover{background:var(--accent-dim);color:var(--accent);}
+.tab-btn.active{background:var(--accent-bg);color:var(--accent);border-color:rgba(29,78,216,.2);font-weight:600;}
+[data-theme="dark"] .tab-btn.active{border-color:rgba(96,165,250,.25);}
+.header-right{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;}
+.icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:var(--shadow);}
+.icon-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent);}
+
+/* ── LAYOUT ── */
+#app{max-width:1200px;margin:0 auto;padding:18px 14px 80px;}
+
+/* ── YEAR BAR ── */
+.year-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.year-nav-btn{width:38px;height:38px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:var(--shadow);flex-shrink:0;}
+.year-nav-btn:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent);}
+.year-input{width:96px;height:38px;text-align:center;font-size:1.05rem;font-weight:700;font-family:var(--font);background:var(--surface);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);outline:none;padding:0 8px;box-shadow:var(--shadow);transition:border-color .15s;}
+.year-input:focus{border-color:var(--accent);}
+.year-bar-label{font-size:.88rem;color:var(--text2);font-weight:500;}
+
+/* ── MONTH BAR (saisie) ── */
+.month-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;}
+.sel-wrap{position:relative;flex:1;}
+.sel-wrap::after{content:"▾";position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--text2);pointer-events:none;font-size:.85rem;}
+.sel-wrap select{width:100%;height:40px;padding:0 32px 0 12px;font-size:.98rem;font-weight:500;font-family:var(--font);background:var(--surface);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);outline:none;box-shadow:var(--shadow);cursor:pointer;}
+.sel-wrap select option{background:var(--surface);color:var(--text);}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);}
+
+/* ── SUMMARY STRIP ── */
+.summary{display:grid;grid-template-columns:repeat(3,1fr);background:var(--accent-bg);border-bottom:1px solid var(--border);padding:12px 6px;}
+.sum-item{text-align:center;padding:0 4px;}
+.sum-label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);}
+.sum-value{font-size:1.05rem;font-weight:700;color:var(--accent);font-family:var(--mono);margin-top:2px;}
+
+/* ── SECTION TITLE ── */
+.section-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:12px 16px 5px;border-top:1px solid var(--border);}
+
+/* ── ROW ── */
+.row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;transition:background .1s;border-top:1px solid var(--border);}
+.row:hover{background:var(--surface2);}
+.row.bold{background:var(--accent-dim);}
+.row.bold:hover{background:var(--accent-dim);}
+.row-label{font-size:.93rem;color:var(--text2);}
+.row.bold .row-label{font-weight:700;color:var(--text);font-size:.97rem;}
+.row-value{font-family:var(--mono);font-size:.93rem;color:var(--text);font-weight:500;}
+.row.bold .row-value{font-weight:700;font-size:1.02rem;color:var(--accent);}
+.row.total{background:var(--accent);border-top:none;}
+.row.total .row-label{color:#fff;font-weight:700;font-size:1rem;}
+.row.total .row-value{color:#fff;font-weight:700;font-size:1.1rem;}
+
+/* ── INPUT ROW ── */
+.input-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-top:1px solid var(--border);transition:background .1s;}
+.input-row:hover{background:var(--surface2);}
+.input-label{font-size:.93rem;color:var(--text2);flex:1;padding-right:8px;}
+.input-wrap{display:flex;align-items:center;gap:5px;width:155px;}
+.input-wrap input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:.93rem;font-weight:500;text-align:right;padding:6px 8px;outline:none;transition:border-color .15s,background .15s;}
+.input-wrap input:focus{border-color:var(--accent);background:var(--accent-bg);}
+.input-wrap input::placeholder{color:var(--text3);font-weight:400;}
+.input-unit{color:var(--text3);font-size:.82rem;font-family:var(--mono);white-space:nowrap;min-width:22px;}
+
+/* ── ECART ── */
+.ecart{margin:8px 16px 12px;padding:9px 12px;border-radius:var(--rs);font-family:var(--mono);font-size:.88rem;text-align:center;font-weight:500;}
+.ecart.ok{background:var(--green-bg);color:var(--green);border:1px solid rgba(22,163,74,.25);}
+.ecart.nok{background:var(--red-bg);color:var(--red);border:1px solid rgba(220,38,38,.25);}
+
+/* ── BULLETIN ── */
+.bulletin-wrap{padding:4px 0 2px;border-top:1px dashed var(--border2);}
+.bulletin-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:9px 16px 3px;}
+
+/* ── OPEN BTN ── */
+.open-btn{background:var(--accent-dim);border:1px solid transparent;border-radius:6px;color:var(--accent);font-size:.75rem;font-weight:600;cursor:pointer;padding:4px 9px;white-space:nowrap;transition:all .12s;}
+.open-btn:hover{background:var(--accent);color:#fff;}
+
+/* ══════════════════════════════
+   TABLEAU ANNUEL
+   - thead (3 lignes) figé en haut
+   - 1ère colonne figée à gauche
+══════════════════════════════ */
+.tableau-outer{
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:75vh;
+  border-radius:var(--r);
+}
+.tableau{border-collapse:collapse;font-size:.85rem;width:max-content;min-width:100%;}
+
+/* ── Cellule figée col 1 : tous les contextes ── */
+.tableau th:first-child,
+.tableau td:first-child {
+  position:sticky;left:0;z-index:3;
+  background:var(--frozen-bg);
+  border-right:2px solid var(--border2);
+}
+/* thead + col-1 : z-index plus élevé pour rester au-dessus du scroll horizontal ET vertical */
+.tableau thead th:first-child { z-index:12; }
+.tableau thead tr.tr-total td:first-child,
+.tableau thead tr.tr-avg   td:first-child { position:sticky;left:0;z-index:11; }
+.tableau thead tr.tr-total td:first-child { background:var(--total-bg); }
+.tableau thead tr.tr-avg   td:first-child { background:var(--avg-bg); }
+
+/* Header figé en haut */
+.tableau thead{position:sticky;top:0;z-index:10;}
+.tableau thead tr:first-child th{background:var(--surface2);}
+.tableau thead tr.tr-total td{background:var(--total-bg);}
+.tableau thead tr.tr-avg   td{background:var(--avg-bg);}
+
+/* Lignes total / moy dans thead */
+.tableau thead tr.tr-total td,
+.tableau thead tr.tr-avg td{
+  padding:8px 10px;font-family:var(--mono);font-size:.82rem;text-align:right;
+  white-space:nowrap;border-bottom:1px solid var(--border2);
+}
+.tableau thead tr.tr-total td:first-child,
+.tableau thead tr.tr-avg td:first-child{
+  text-align:left;font-family:var(--font);font-weight:700;font-size:.84rem;
+  white-space:nowrap;
+}
+.tableau thead tr.tr-total td.net-col{color:var(--accent);font-weight:700;}
+.tableau thead tr.tr-avg  td.net-col{color:var(--purple);font-weight:700;}
+.tableau thead tr.tr-total td.neg{color:var(--orange);}
+.tableau thead tr.tr-avg  td.neg{color:var(--orange);}
+.tableau thead tr.tr-total td{font-weight:700;color:var(--text);}
+.tableau thead tr.tr-avg  td{font-weight:600;color:var(--text2);}
+
+/* séparateurs */
+.tableau thead tr:first-child th{border-bottom:2px solid var(--border2);}
+.tableau thead tr.tr-avg td{border-bottom:2px solid var(--border2);}
+
+/* Cellules header */
+.tableau th{
+  padding:8px 10px;font-size:.65rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--text2);
+  text-align:right;
+  /* autoriser le retour à la ligne pour compacter */
+  white-space:normal;word-break:keep-all;
+  line-height:1.25;max-width:90px;
+}
+.tableau th:first-child{text-align:left;max-width:none;white-space:nowrap;}
+.tableau th.accent{color:var(--accent);}
+/* Colonne "bouton" : minimale */
+.tableau th:last-child{width:1px;padding:8px 6px;}
+
+/* Cellules body */
+.tableau tbody td{
+  padding:9px 10px;text-align:right;
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono);font-size:.85rem;color:var(--text2);
+  white-space:nowrap;
+}
+.tableau tbody td:first-child{
+  text-align:left;font-family:var(--font);font-weight:600;
+  color:var(--text);font-size:.88rem;white-space:nowrap;
+}
+.tableau tbody td.net-col{color:var(--accent);font-weight:700;font-size:.88rem;}
+.tableau tbody td.neg{color:var(--orange);}
+.tableau tbody tr.clickable{cursor:pointer;transition:background .1s;}
+.tableau tbody tr.clickable:hover td{background:var(--accent-dim);}
+.tableau tbody tr.clickable:hover td:first-child{background:var(--frozen-bg);}
+.tableau tbody tr.empty-month td{color:var(--text3);}
+.tableau tbody tr.empty-month td:first-child{color:var(--text);font-style:normal;}
+
+/* ══════════════════════════════
+   TABLEAU TRANSPOSÉ (colonnes = mois)
+   1ère colonne (intitulés) figée
+══════════════════════════════ */
+.transposed-outer{
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:80vh;
+  border-radius:var(--r);
+}
+.transposed{border-collapse:collapse;font-size:.87rem;width:max-content;}
+
+/* Colonne 1 figée */
+.transposed td:first-child,
+.transposed th:first-child{
+  position:sticky;left:0;z-index:5;
+  background:var(--frozen-bg);
+  border-right:2px solid var(--border2);
+  font-weight:700;
+}
+.transposed th{
+  padding:10px 13px;font-size:.7rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;
+  color:var(--text2);text-align:center;white-space:nowrap;
+  background:var(--surface2);border-bottom:2px solid var(--border2);
+  position:sticky;top:0;z-index:4;
+}
+.transposed th:first-child{z-index:6;text-align:left;}
+.transposed th.col-total{background:var(--total-bg);}
+.transposed th.col-avg{background:var(--avg-bg);}
+.transposed td{
+  padding:10px 13px;text-align:right;
+  border-bottom:1px solid var(--border);border-right:1px solid var(--border);
+  font-family:var(--mono);font-size:.87rem;color:var(--text2);white-space:nowrap;
+}
+.transposed td:first-child{font-family:var(--font);font-size:.88rem;color:var(--text);text-align:left;}
+.transposed tr.row-net td{color:var(--accent);font-weight:700;}
+.transposed tr.row-net td:first-child{color:var(--text);}
+.transposed tr.row-neg td:not(:first-child){color:var(--orange);}
+.transposed tr:hover td{background:var(--accent-dim);}
+.transposed tr:hover td:first-child{background:var(--frozen-bg);}
+/* Colonnes Total / Moyenne */
+.transposed td.col-total{background:var(--total-bg);font-weight:700;color:var(--text);}
+.transposed td.col-avg{background:var(--avg-bg);font-weight:600;color:var(--text2);}
+.transposed tr.row-net td.col-total{color:var(--accent);}
+.transposed tr.row-net td.col-avg{color:var(--purple);}
+
+/* ── CHARTS ── */
+.chart-wrap{padding:16px;}
+.chart-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);margin-bottom:12px;}
+.chart-canvas-wrap{position:relative;height:240px;}
+.chart-canvas-wrap.tall{height:300px;}
+
+/* ── EMPTY ── */
+.empty{padding:52px 20px;text-align:center;color:var(--text3);}
+.empty-icon{font-size:2.6rem;margin-bottom:10px;}
+.empty-text{font-size:.97rem;line-height:1.6;}
+
+/* ── INSTALL BANNER ── */
+#install-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--surface);border-top:1px solid var(--border2);padding:12px 16px;box-shadow:var(--shadow-md);}
+.install-inner{max-width:600px;margin:0 auto;display:flex;align-items:center;gap:10px;}
+.install-text{flex:1;font-size:.86rem;color:var(--text2);line-height:1.4;}
+.install-text strong{color:var(--text);display:block;}
+.install-close{background:none;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;padding:2px 6px;}
+
+/* ── BADGE dernier mois ── */
+.last-badge{font-size:.68rem;font-weight:600;color:var(--text3);background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:2px 8px;margin-left:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="header-inner">
+    <div class="app-brand">
+      <span class="app-icon">💶</span>
+      <span class="app-title">Pension Retraite</span>
+    </div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" id="tab-tableau"    onclick="showTab('tableau')">📋 Tableau</button>
+      <button class="tab-btn"        id="tab-transposed" onclick="showTab('transposed')">↔️ Transposé</button>
+      <button class="tab-btn"        id="tab-saisie"     onclick="showTab('saisie')">✏️ Saisie</button>
+      <button class="tab-btn"        id="tab-graphiques" onclick="showTab('graphiques')">📊 Graphiques</button>
+    </nav>
+    <div class="header-right">
+      <button class="icon-btn" onclick="exportJSON()" title="Exporter les données (JSON)">⬇️</button>
+      <button class="icon-btn" onclick="document.getElementById('import-input').click()" title="Importer des données (JSON)">⬆️</button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Thème">🌙</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ══ TABLEAU ANNUEL ══ -->
+  <div id="tab-content-tableau">
+    <div class="year-bar">
+      <button class="year-nav-btn" onclick="shiftYear('tableau',-1)">◀</button>
+      <input class="year-input" type="number" id="year-tableau" oninput="onYearChange('tableau')">
+      <button class="year-nav-btn" onclick="shiftYear('tableau',1)">▶</button>
+      <span class="year-bar-label">— vue annuelle</span>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div class="tableau-outer">
+        <table class="tableau" id="main-tableau">
+          <thead>
+            <tr>
+              <th>Mois</th>
+              <th>Brut<br>pension</th>
+              <th>Brut<br>total</th>
+              <th>Cot.<br>déductibles</th>
+              <th>Cot.<br>non déd.</th>
+              <th>Total<br>cotisations</th>
+              <th>Net av.<br>impôt</th>
+              <th>Rev.<br>imposable</th>
+              <th>PAS</th>
+              <th class="accent">Net<br>à payer</th>
+              <th></th>
+            </tr>
+            <tr class="tr-total" id="tr-total"></tr>
+            <tr class="tr-avg"   id="tr-avg"></tr>
+          </thead>
+          <tbody id="tableau-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TABLEAU TRANSPOSÉ ══ -->
+  <div id="tab-content-transposed" style="display:none">
+    <div class="year-bar">
+      <button class="year-nav-btn" onclick="shiftYear('transposed',-1)">◀</button>
+      <input class="year-input" type="number" id="year-transposed" oninput="onYearChange('transposed')">
+      <button class="year-nav-btn" onclick="shiftYear('transposed',1)">▶</button>
+      <span class="year-bar-label">— vue transposée (mois en colonnes)</span>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div class="transposed-outer">
+        <table class="transposed" id="transposed-table"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SAISIE ══ -->
+  <div id="tab-content-saisie" style="display:none">
+    <div class="month-bar">
+      <div class="sel-wrap" style="flex:2">
+        <select id="sel-mois" onchange="onMonthChange()"></select>
+      </div>
+      <input class="year-input" type="number" id="year-saisie" style="width:100px;height:40px;font-size:.95rem" oninput="onYearChange('saisie')">
+    </div>
+    <div id="last-month-notice" style="display:none;margin-bottom:10px;padding:8px 14px;background:var(--accent-bg);border:1px solid var(--border2);border-radius:var(--rs);font-size:.82rem;color:var(--text2);">
+      💡 Valeurs pré-remplies depuis <span id="last-month-name" style="font-weight:600;color:var(--accent)"></span>
+    </div>
+    <div class="card">
+      <div class="summary">
+        <div class="sum-item"><div class="sum-label">Brut total</div><div class="sum-value" id="s-brut">—</div></div>
+        <div class="sum-item"><div class="sum-label">Net av. impôt</div><div class="sum-value" id="s-net-avant">—</div></div>
+        <div class="sum-item"><div class="sum-label">Net à payer</div><div class="sum-value" id="s-net">—</div></div>
+      </div>
+      <div class="section-title">Paramètres de base</div>
+      <div class="input-row"><span class="input-label">Plafond mens. séc. sociale</span><div class="input-wrap"><input type="number" step="1"    id="f-plafond"     oninput="calc()"><span class="input-unit">€</span></div></div>
+      <div class="input-row"><span class="input-label">Brut pension statutaire</span>   <div class="input-wrap"><input type="number" step="0.01" id="f-brutPension" oninput="calc()"><span class="input-unit">€</span></div></div>
+      <div class="input-row"><span class="input-label">Indem. avantage en nature</span> <div class="input-wrap"><input type="number" step="0.01" id="f-indemNature" oninput="calc()"><span class="input-unit">€</span></div></div>
+      <div class="row bold" style="border-top:1px solid var(--border)"><span class="row-label">Brut total</span><span class="row-value" id="r-b4">—</span></div>
+      <div class="section-title">Fiscalité</div>
+      <div class="input-row"><span class="input-label">Valeur fisc. avantage en nature</span><div class="input-wrap"><input type="number" step="0.01" id="f-valeurFisc" oninput="calc()"><span class="input-unit">€</span></div></div>
+      <div class="section-title">Calculs automatiques</div>
+      <div class="row"><span class="row-label">Cotisations déductibles</span>    <span class="row-value" id="r-b6">—</span></div>
+      <div class="row"><span class="row-label">Cotisations non déductibles</span><span class="row-value" id="r-b7">—</span></div>
+      <div class="row"><span class="row-label">Total cotisations</span>          <span class="row-value" id="r-b8">—</span></div>
+      <div class="row bold"><span class="row-label">Net avant impôt</span>       <span class="row-value" id="r-b9">—</span></div>
+      <div class="row"><span class="row-label">Revenu net imposable</span>       <span class="row-value" id="r-b10">—</span></div>
+      <div class="section-title">Prélèvement à la source</div>
+      <div class="input-row"><span class="input-label">Taux prélèvement</span><div class="input-wrap"><input type="number" step="0.001" min="0" max="1" id="f-tauxPAS" oninput="calc()"><span class="input-unit" id="pct-display">%</span></div></div>
+      <div class="row"><span class="row-label">Prélèvement à la source</span><span class="row-value" id="r-b12">—</span></div>
+      <div class="row total"><span class="row-label">Net à payer</span><span class="row-value" id="r-b13">—</span></div>
+      <div class="bulletin-wrap">
+        <div class="bulletin-title">Vérification bulletin reçu</div>
+        <div class="input-row" style="border-top:none">
+          <span class="input-label">Net payé sur bulletin</span>
+          <div class="input-wrap"><input type="number" step="0.01" id="f-bulletin" placeholder="Montant reçu" oninput="checkBulletin()"><span class="input-unit">€</span></div>
+        </div>
+        <div id="ecart-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ GRAPHIQUES ══ -->
+  <div id="tab-content-graphiques" style="display:none">
+    <!-- Graphique multi-années -->
+    <div class="card">
+      <div class="chart-wrap">
+        <div class="chart-title">Toutes années — Net à payer & Brut total</div>
+        <div class="chart-canvas-wrap tall"><canvas id="chart-all-years"></canvas></div>
+      </div>
+    </div>
+    <!-- Graphique annuel avec sélecteur -->
+    <div class="year-bar">
+      <button class="year-nav-btn" onclick="shiftYear('graph',-1)">◀</button>
+      <input class="year-input" type="number" id="year-graph" oninput="onYearChange('graph')">
+      <button class="year-nav-btn" onclick="shiftYear('graph',1)">▶</button>
+      <span class="year-bar-label">— détail annuel</span>
+    </div>
+    <div id="graph-empty" class="card" style="display:none">
+      <div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Aucune donnée pour cette année.</div></div>
+    </div>
+    <div id="graph-content">
+      <div class="card"><div class="chart-wrap"><div class="chart-title">Évolution — Brut total & Net à payer</div><div class="chart-canvas-wrap"><canvas id="chart-line"></canvas></div></div></div>
+      <div class="card"><div class="chart-wrap"><div class="chart-title">Retenues — Cotisations & PAS</div><div class="chart-canvas-wrap"><canvas id="chart-bar"></canvas></div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal import -->
+<div id="import-modal" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:24px;max-width:420px;width:100%;box-shadow:var(--shadow-md);">
+    <div style="font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:8px;">⬆️ Importer des données</div>
+    <div id="import-modal-info" style="font-size:.88rem;color:var(--text2);margin-bottom:18px;line-height:1.5;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeImportModal()" style="padding:8px 18px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:var(--font);font-size:.88rem;cursor:pointer;">Annuler</button>
+      <button id="import-replace-btn" onclick="doImport('replace')" style="padding:8px 18px;border-radius:var(--rs);border:none;background:var(--red);color:#fff;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;">Remplacer tout</button>
+      <button id="import-merge-btn"   onclick="doImport('merge')"   style="padding:8px 18px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;">Fusionner</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:500;background:var(--text);color:var(--bg);padding:10px 20px;border-radius:30px;font-size:.88rem;font-weight:500;box-shadow:var(--shadow-md);white-space:nowrap;"></div>
+
+<div id="install-banner">
+  <div class="install-inner">
+    <div class="install-text"><strong>Installer l'application</strong>Sur iOS : ⬆ Partager → "Sur l'écran d'accueil"</div>
+    <button class="install-close" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
+  </div>
+</div>
+
+<script>
+/* ══ CONSTANTS ══ */
+const MOIS = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const MOIS_SHORT = MOIS.map(m=>m.slice(0,3));
+const STORAGE_KEY = "pension_v4";
+const FIELDS = ["plafond","brutPension","indemNature","valeurFisc","tauxPAS"];
+
+let allData = {};
+let currentTab = "tableau";
+let lineChart=null, barChart=null, allYearsChart=null;
+
+/* ══ STORAGE ══ */
+function loadStorage(){ try{ const s=localStorage.getItem(STORAGE_KEY); if(s) allData=JSON.parse(s); }catch{} }
+function save(){ try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(allData)); }catch{} }
+
+/* ══ THEME ══ */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("theme-btn").textContent = t==="dark"?"☀️":"🌙";
+  try{ localStorage.setItem("pension_theme",t); }catch{}
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+  if(currentTab==="graphiques") renderCharts();
+}
+
+/* ══ YEAR HELPERS ══ */
+const YEAR_IDS = {tableau:"year-tableau",transposed:"year-transposed",saisie:"year-saisie",graph:"year-graph"};
+function getYear(w){ return parseInt(document.getElementById(YEAR_IDS[w]).value)||new Date().getFullYear(); }
+function setYear(w,y){ document.getElementById(YEAR_IDS[w]).value=y; }
+function shiftYear(w,d){ setYear(w,getYear(w)+d); onYearChange(w); }
+function onYearChange(w){
+  if(w==="tableau")     renderTableau();
+  else if(w==="transposed") renderTransposed();
+  else if(w==="saisie") loadMonth();
+  else if(w==="graph")  renderCharts();
+}
+
+/* ══ CALC ══ */
+function arr(v,d=2){ return Math.round(v*Math.pow(10,d))/Math.pow(10,d); }
+function calculer(d){
+  const b1=parseFloat(d.plafond)||0, b2=parseFloat(d.brutPension)||0,
+        b3=parseFloat(d.indemNature)||0, b5=parseFloat(d.valeurFisc)||0,
+        b11=parseFloat(d.tauxPAS)||0;
+  const b4=b2+b3;
+  const b6=-(arr((b2+b3+b5)*5.9/100,2)+arr((b1*1.55)*2.25/100,2));
+  const b7=-(arr((b2+b3+b5)*(2.4+0.5+0.3)/100,2));
+  const b8=b6+b7, b9=b4+b8, b10=b4+b6+b5-b3;
+  const b12=-(arr(b10*b11,2));
+  const b13=b2+b3+b8+b12;
+  return {b4,b6,b7,b8,b9,b10,b12,b13};
+}
+
+/* ══ FORMAT ══ */
+function fmt(v,dec=2){ if(v===""||v===undefined||v===null||isNaN(v)) return "—"; return new Intl.NumberFormat("fr-FR",{minimumFractionDigits:dec,maximumFractionDigits:dec}).format(v)+" €"; }
+function fmt0(v){ return fmt(v,0); }
+function fmtn(v){ return (v===null||v===undefined||isNaN(v))?"—":new Intl.NumberFormat("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v)+" €"; }
+
+/* ══ LAST FILLED MONTH ══ */
+/* Trouve le dernier mois rempli avant le mois courant (toutes années confondues, puis même année) */
+function findLastFilledData(beforeMois, beforeAnnee) {
+  // Cherche en remontant le temps depuis (beforeAnnee, beforeMois-1)
+  let a = beforeAnnee, m = beforeMois - 1;
+  for(let i=0; i<48; i++){
+    if(m < 0){ m=11; a--; }
+    const k = `${a}-${m}`;
+    if(allData[k] && allData[k].brutPension){
+      return { data: allData[k], label: MOIS[m]+" "+a };
+    }
+    m--;
+  }
+  return null;
+}
+
+/* ══ INIT ══ */
+function initSelectors(){
+  const sel=document.getElementById("sel-mois");
+  MOIS.forEach((m,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=m; sel.appendChild(o); });
+  const now=new Date(), y=now.getFullYear();
+  sel.value=now.getMonth();
+  Object.keys(YEAR_IDS).forEach(w=>setYear(w,y));
+}
+
+/* ══ SAISIE ══ */
+function getKey(mois,annee){
+  const m=mois!==undefined?mois:parseInt(document.getElementById("sel-mois").value);
+  const a=annee!==undefined?annee:getYear("saisie");
+  return `${a}-${m}`;
+}
+
+function loadMonth(){
+  const mois=parseInt(document.getElementById("sel-mois").value);
+  const annee=getYear("saisie");
+  const key=getKey(mois,annee);
+  const existing=allData[key];
+  const notice=document.getElementById("last-month-notice");
+
+  if(existing && existing.brutPension){
+    // Données déjà saisies : on les affiche telles quelles
+    FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el) el.value=existing[f]||""; });
+    notice.style.display="none";
+  } else {
+    // Nouveau mois : chercher le dernier mois rempli
+    const last=findLastFilledData(mois,annee);
+    if(last){
+      // Pré-remplir en placeholder (valeurs visibles en gris via placeholder)
+      FIELDS.forEach(f=>{
+        const el=document.getElementById("f-"+f);
+        if(!el) return;
+        el.value="";
+        el.placeholder=last.data[f]||"";
+      });
+      document.getElementById("last-month-name").textContent=last.label;
+      notice.style.display="block";
+    } else {
+      FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el){ el.value=""; el.placeholder=""; } });
+      document.getElementById("f-plafond").placeholder="3864";
+      notice.style.display="none";
+    }
+  }
+  document.getElementById("f-bulletin").value="";
+  document.getElementById("ecart-wrap").innerHTML="";
+  calc();
+}
+
+function onMonthChange(){ loadMonth(); }
+
+function calc(){
+  const key=getKey();
+  // Lire les valeurs des inputs (si vide et placeholder présent, utiliser placeholder)
+  function val(id){
+    const el=document.getElementById(id);
+    if(!el) return "";
+    return el.value !== "" ? el.value : el.placeholder;
+  }
+  const d={
+    plafond:    val("f-plafond"),
+    brutPension:val("f-brutPension"),
+    indemNature:val("f-indemNature"),
+    valeurFisc: val("f-valeurFisc"),
+    tauxPAS:    val("f-tauxPAS"),
+  };
+
+  // Sauvegarder seulement si des valeurs ont été tapées (pas juste des placeholders)
+  const typed={};
+  FIELDS.forEach(f=>{ const el=document.getElementById("f-"+f); if(el&&el.value!=="") typed[f]=el.value; });
+  if(Object.keys(typed).length>0){
+    allData[key]={...d,...typed}; save();
+  }
+
+  const taux=parseFloat(d.tauxPAS)||0;
+  document.getElementById("pct-display").textContent=taux?(taux*100).toFixed(1)+"%":"%";
+
+  if(!d.brutPension||d.brutPension===""){
+    ["b4","b6","b7","b8","b9","b10","b12","b13"].forEach(id=>{ document.getElementById("r-"+id).textContent="—"; });
+    ["s-brut","s-net-avant","s-net"].forEach(id=>{ document.getElementById(id).textContent="—"; });
+    return;
+  }
+  const c=calculer(d);
+  document.getElementById("r-b4").textContent=fmt(c.b4);
+  document.getElementById("r-b6").textContent=fmt(c.b6);
+  document.getElementById("r-b7").textContent=fmt(c.b7);
+  document.getElementById("r-b8").textContent=fmt(c.b8);
+  document.getElementById("r-b9").textContent=fmt(c.b9);
+  document.getElementById("r-b10").textContent=fmt(c.b10);
+  document.getElementById("r-b12").textContent=fmt(c.b12);
+  document.getElementById("r-b13").textContent=fmt(c.b13);
+  document.getElementById("s-brut").textContent=fmt(c.b4);
+  document.getElementById("s-net-avant").textContent=fmt(c.b9);
+  document.getElementById("s-net").textContent=fmt(c.b13);
+  checkBulletin();
+  if(currentTab==="tableau") renderTableau();
+  if(currentTab==="transposed") renderTransposed();
+}
+
+// Quand l'utilisateur commence à taper dans un champ pré-rempli par placeholder, on efface le placeholder
+FIELDS.forEach(f=>{
+  document.addEventListener("DOMContentLoaded",()=>{});
+  // géré via oninput + logique dans calc()
+});
+
+function checkBulletin(){
+  const bul=parseFloat(document.getElementById("f-bulletin").value);
+  const d=allData[getKey()];
+  if(!bul||!d||!d.brutPension){ document.getElementById("ecart-wrap").innerHTML=""; return; }
+  const c=calculer(d);
+  const diff=arr(bul-c.b13,2);
+  const ok=Math.abs(diff)<0.05;
+  document.getElementById("ecart-wrap").innerHTML=`<div class="ecart ${ok?"ok":"nok"}">${ok?"✓ Correspond au calcul":"Écart : "+fmt(diff)}</div>`;
+}
+
+/* ══ STATS HELPERS ══ */
+function getYearStats(annee){
+  let n=0;
+  let totB2=0,totB4=0,totB6=0,totB7=0,totB8=0,totB9=0,totB10=0,totB12=0,totB13=0;
+  const rows=[];
+  MOIS.forEach((mois,i)=>{
+    const k=`${annee}-${i}`;
+    const d=allData[k];
+    if(d&&d.brutPension){
+      const c=calculer(d);
+      n++;
+      totB2+=parseFloat(d.brutPension)||0;
+      totB4+=c.b4; totB6+=c.b6; totB7+=c.b7; totB8+=c.b8;
+      totB9+=c.b9; totB10+=c.b10; totB12+=c.b12; totB13+=c.b13;
+      rows.push({mois,i,d,c});
+    } else {
+      rows.push({mois,i,d:null,c:null});
+    }
+  });
+  const avg=(v)=>n>0?arr(v/n,2):null;
+  return {n,rows,
+    tot:{b2:totB2,b4:totB4,b6:totB6,b7:totB7,b8:totB8,b9:totB9,b10:totB10,b12:totB12,b13:totB13},
+    avg:{b2:avg(totB2),b4:avg(totB4),b6:avg(totB6),b7:avg(totB7),b8:avg(totB8),b9:avg(totB9),b10:avg(totB10),b12:avg(totB12),b13:avg(totB13)}
+  };
+}
+
+/* ══ TABLEAU ANNUEL ══ */
+function renderTableau(){
+  const annee=getYear("tableau");
+  const {n,rows,tot,avg}=getYearStats(annee);
+  const tbody=document.getElementById("tableau-body");
+  tbody.innerHTML="";
+
+  // Ligne total (dans thead)
+  const trTot=document.getElementById("tr-total");
+  // Ligne avg (dans thead)
+  const trAvg=document.getElementById("tr-avg");
+
+  if(n===0){
+    trTot.innerHTML=`<td colspan="11" style="padding:8px 13px;color:var(--text3);font-style:italic;font-size:.83rem">Aucune donnée pour ${annee}</td>`;
+    trAvg.innerHTML="";
+  } else {
+    trTot.innerHTML=`
+      <td>Total ${annee}</td>
+      <td>${fmt0(tot.b2)}</td><td>${fmt0(tot.b4)}</td>
+      <td class="neg">${fmt0(tot.b6)}</td><td class="neg">${fmt0(tot.b7)}</td>
+      <td class="neg">${fmt0(tot.b8)}</td><td>${fmt0(tot.b9)}</td>
+      <td>${fmt0(tot.b10)}</td><td class="neg">${fmt0(tot.b12)}</td>
+      <td class="net-col">${fmt(tot.b13)}</td><td></td>`;
+    trAvg.innerHTML=`
+      <td>Moyenne <small style="font-weight:400;color:var(--text3)">(${n} mois)</small></td>
+      <td>${fmtn(avg.b2)}</td><td>${fmtn(avg.b4)}</td>
+      <td class="neg">${fmtn(avg.b6)}</td><td class="neg">${fmtn(avg.b7)}</td>
+      <td class="neg">${fmtn(avg.b8)}</td><td>${fmtn(avg.b9)}</td>
+      <td>${fmtn(avg.b10)}</td><td class="neg">${fmtn(avg.b12)}</td>
+      <td class="net-col">${fmtn(avg.b13)}</td><td></td>`;
+  }
+
+  rows.forEach(({mois,i,d,c})=>{
+    const tr=document.createElement("tr");
+    if(!d||!d.brutPension){
+      tr.className="clickable empty-month";
+      tr.onclick=()=>goToSaisie(i,annee);
+      tr.innerHTML=`<td>${mois}</td><td colspan="9" style="color:var(--text3);font-size:.83rem;font-style:italic">— non saisi</td><td><button class="open-btn" onclick="event.stopPropagation();goToSaisie(${i},${annee})">Saisir</button></td>`;
+    } else {
+      tr.className="clickable";
+      tr.onclick=()=>goToSaisie(i,annee);
+      tr.innerHTML=`
+        <td>${mois}</td>
+        <td>${fmt(parseFloat(d.brutPension)||0)}</td><td>${fmt(c.b4)}</td>
+        <td class="neg">${fmt(c.b6)}</td><td class="neg">${fmt(c.b7)}</td>
+        <td class="neg">${fmt(c.b8)}</td><td>${fmt(c.b9)}</td>
+        <td>${fmt(c.b10)}</td><td class="neg">${fmt(c.b12)}</td>
+        <td class="net-col">${fmt(c.b13)}</td>
+        <td><button class="open-btn" onclick="event.stopPropagation();goToSaisie(${i},${annee})">Modifier</button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+/* ══ TABLEAU TRANSPOSÉ ══ */
+function renderTransposed(){
+  const annee=getYear("transposed");
+  const {n,rows,tot,avg}=getYearStats(annee);
+  const table=document.getElementById("transposed-table");
+  table.innerHTML="";
+
+  // Intitulés des lignes
+  const rowDefs=[
+    {label:"Brut pension",    key:"b2",  neg:false, net:false},
+    {label:"Brut total",      key:"b4",  neg:false, net:false},
+    {label:"Cot. déductibles",key:"b6",  neg:true,  net:false},
+    {label:"Cot. non déd.",   key:"b7",  neg:true,  net:false},
+    {label:"Total cotisations",key:"b8", neg:true,  net:false},
+    {label:"Net av. impôt",   key:"b9",  neg:false, net:false},
+    {label:"Rev. imposable",  key:"b10", neg:false, net:false},
+    {label:"PAS",             key:"b12", neg:true,  net:false},
+    {label:"Net à payer",     key:"b13", neg:false, net:true},
+  ];
+
+  // Liste des mois avec données
+  const filledRows=rows.filter(r=>r.d&&r.d.brutPension);
+
+  // HEADER : 1 col intitulé + 1 col par mois + col Total + col Moy
+  const thead=document.createElement("thead");
+  const trH=document.createElement("tr");
+  let thL=document.createElement("th"); thL.textContent=""; trH.appendChild(thL);
+  filledRows.forEach(({mois})=>{
+    const th=document.createElement("th"); th.textContent=mois.slice(0,4); trH.appendChild(th);
+  });
+  let thTot=document.createElement("th"); thTot.textContent="Total"; thTot.className="col-total"; trH.appendChild(thTot);
+  let thAvg=document.createElement("th"); thAvg.textContent="Moy. ("+n+"m)"; thAvg.className="col-avg"; trH.appendChild(thAvg);
+  thead.appendChild(trH);
+  table.appendChild(thead);
+
+  // BODY : 1 ligne par métrique
+  const tbody=document.createElement("tbody");
+  rowDefs.forEach(({label,key,neg,net})=>{
+    const tr=document.createElement("tr");
+    if(net) tr.className="row-net";
+    if(neg) tr.className="row-neg";
+    const tdL=document.createElement("td"); tdL.textContent=label; tr.appendChild(tdL);
+
+    filledRows.forEach(({d,c})=>{
+      const td=document.createElement("td");
+      const v=key==="b2"?(parseFloat(d.brutPension)||0):c[key];
+      td.textContent=fmt(v);
+      tr.appendChild(td);
+    });
+    // Total
+    const tdTot=document.createElement("td"); tdTot.className="col-total";
+    const totV=key==="b2"?tot.b2:tot[key];
+    tdTot.textContent=n>0?fmt0(totV):"—"; tr.appendChild(tdTot);
+    // Moyenne
+    const tdAvg=document.createElement("td"); tdAvg.className="col-avg";
+    const avgV=key==="b2"?avg.b2:avg[key];
+    tdAvg.textContent=n>0?fmtn(avgV):"—"; tr.appendChild(tdAvg);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+}
+
+function goToSaisie(moisIdx,annee){
+  document.getElementById("sel-mois").value=moisIdx;
+  setYear("saisie",annee);
+  loadMonth();
+  showTab("saisie");
+}
+
+/* ══ CHARTS ══ */
+function isDark(){ return document.documentElement.getAttribute("data-theme")==="dark"; }
+function getChartColors(){
+  return isDark()
+    ?{line1:"#60a5fa",line2:"#fb923c",bar1:"rgba(96,165,250,.7)",bar2:"rgba(251,191,36,.55)",grid:"rgba(148,163,184,.12)",tick:"rgba(148,163,184,.6)"}
+    :{line1:"#1d4ed8",line2:"#ea580c",bar1:"rgba(29,78,216,.65)",bar2:"rgba(234,88,12,.55)",grid:"rgba(100,116,139,.14)",tick:"rgba(100,116,139,.7)"};
+}
+
+function getAnneesList(){
+  const years=new Set();
+  Object.keys(allData).forEach(k=>{
+    const [y]=k.split("-"); if(y) years.add(parseInt(y));
+  });
+  return [...years].sort();
+}
+
+function renderCharts(){
+  const col=getChartColors();
+  const baseOpts={
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:col.tick,font:{family:"Inter",size:11},boxWidth:12,padding:14}}},
+    scales:{
+      x:{ticks:{color:col.tick,font:{family:"Inter",size:10}},grid:{color:col.grid}},
+      y:{ticks:{color:col.tick,font:{family:"IBM Plex Mono",size:10}},grid:{color:col.grid}}
+    }
+  };
+
+  /* 1. Graphique TOUTES ANNÉES */
+  const years=getAnneesList();
+  if(allYearsChart) allYearsChart.destroy();
+
+  if(years.length===0){
+    document.getElementById("chart-all-years").style.display="none";
+  } else {
+    document.getElementById("chart-all-years").style.display="";
+    // Labels = Jan à Déc, une série par année
+    const palette=["#3b82f6","#ef4444","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#84cc16"];
+    const datasets=[];
+    years.forEach((yr,idx)=>{
+      const netData=[], brutData=[];
+      MOIS_SHORT.forEach((_,i)=>{
+        const k=`${yr}-${i}`;
+        const d=allData[k];
+        if(d&&d.brutPension){ const c=calculer(d); netData.push({x:i,y:arr(c.b13,2)}); }
+      });
+      if(netData.length===0) return;
+      const c=palette[idx%palette.length];
+      datasets.push({
+        label:`${yr} — Net`,
+        data:netData,
+        borderColor:c, backgroundColor:c+"22",
+        borderWidth:2,pointBackgroundColor:c,pointRadius:4,tension:0.35,
+        parsing:{xAxisKey:"x",yAxisKey:"y"}
+      });
+    });
+
+    allYearsChart=new Chart(document.getElementById("chart-all-years"),{
+      type:"line",
+      data:{datasets},
+      options:{...baseOpts,
+        scales:{
+          x:{...baseOpts.scales.x,
+            type:"linear",min:0,max:11,
+            ticks:{...baseOpts.scales.x.ticks,callback:v=>MOIS_SHORT[v]||""}
+          },
+          y:{...baseOpts.scales.y}
+        },
+        plugins:{...baseOpts.plugins,
+          tooltip:{callbacks:{
+            title:items=>"Mois : "+MOIS[items[0].parsed.x],
+            label:ctx=>` ${ctx.dataset.label} : ${ctx.parsed.y.toFixed(2)} €`
+          }}
+        }
+      }
+    });
+  }
+
+  /* 2. Graphique annuel détaillé */
+  const annee=getYear("graph");
+  const {n,rows}=getYearStats(annee);
+  const filledRows=rows.filter(r=>r.d&&r.d.brutPension);
+  const hasData=filledRows.length>0;
+  document.getElementById("graph-empty").style.display=hasData?"none":"";
+  document.getElementById("graph-content").style.display=hasData?"":"none";
+  if(!hasData) return;
+
+  const labels=filledRows.map(r=>r.mois.slice(0,3));
+
+  if(lineChart) lineChart.destroy();
+  lineChart=new Chart(document.getElementById("chart-line"),{
+    type:"line",
+    data:{labels,datasets:[
+      {label:"Net à payer",data:filledRows.map(r=>arr(r.c.b13,2)),borderColor:col.line1,backgroundColor:col.line1+"22",borderWidth:2.5,pointBackgroundColor:col.line1,pointRadius:5,tension:0.35},
+      {label:"Brut total", data:filledRows.map(r=>arr(r.c.b4,2)), borderColor:col.line2,backgroundColor:col.line2+"11",borderWidth:2,pointBackgroundColor:col.line2,pointRadius:4,borderDash:[6,3],tension:0.35}
+    ]},
+    options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label} : ${ctx.parsed.y.toFixed(2)} €`}}}}
+  });
+
+  if(barChart) barChart.destroy();
+  barChart=new Chart(document.getElementById("chart-bar"),{
+    type:"bar",
+    data:{labels,datasets:[
+      {label:"Cotisations",data:filledRows.map(r=>arr(Math.abs(r.c.b8),2)),backgroundColor:col.bar1,borderRadius:5},
+      {label:"PAS",        data:filledRows.map(r=>arr(Math.abs(r.c.b12),2)),backgroundColor:col.bar2,borderRadius:5}
+    ]},
+    options:{...baseOpts,plugins:{...baseOpts.plugins,tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label} : ${ctx.parsed.y.toFixed(2)} €`}}}}
+  });
+}
+
+/* ══ TABS ══ */
+function showTab(tab){
+  currentTab=tab;
+  ["tableau","transposed","saisie","graphiques"].forEach(t=>{
+    document.getElementById("tab-content-"+t).style.display=t===tab?"":"none";
+    document.getElementById("tab-"+t).classList.toggle("active",t===tab);
+  });
+  if(tab==="tableau")    renderTableau();
+  if(tab==="transposed") renderTransposed();
+  if(tab==="graphiques") renderCharts();
+}
+
+/* ══ EXPORT / IMPORT ══ */
+function exportJSON(){
+  const nb = Object.keys(allData).length;
+  if(nb === 0){ showToast("Aucune donnée à exporter."); return; }
+  const payload = { version: 1, exportDate: new Date().toISOString(), data: allData };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const dateStr = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `pension-retraite-${dateStr}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast(`✓ ${nb} entrée(s) exportée(s)`);
+}
+
+let pendingImportData = null;
+
+function importJSON(event){
+  const file = event.target.files[0];
+  event.target.value = ""; // reset input
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      // Accepter soit le format enveloppé {version, data} soit un objet brut clé→mois
+      const importedData = parsed.version ? parsed.data : parsed;
+      if(typeof importedData !== "object" || Array.isArray(importedData))
+        throw new Error("Format invalide");
+      const nb = Object.keys(importedData).length;
+      if(nb === 0) throw new Error("Fichier vide");
+      pendingImportData = importedData;
+      const existNb = Object.keys(allData).length;
+      const info = existNb > 0
+        ? `Le fichier contient <strong>${nb} entrée(s)</strong>.<br><br>
+           <strong>Fusionner</strong> : ajoute les nouvelles données sans effacer l'existant (en cas de conflit, le fichier importé prend la priorité).<br>
+           <strong>Remplacer tout</strong> : efface les ${existNb} entrée(s) actuelles et les remplace par le fichier importé.`
+        : `Le fichier contient <strong>${nb} entrée(s)</strong>. Cliquez sur Importer pour continuer.`;
+      document.getElementById("import-modal-info").innerHTML = info;
+      document.getElementById("import-replace-btn").style.display = existNb > 0 ? "" : "none";
+      document.getElementById("import-merge-btn").textContent = existNb > 0 ? "Fusionner" : "Importer";
+      const modal = document.getElementById("import-modal");
+      modal.style.display = "flex";
+    } catch(err) {
+      showToast("⚠️ Fichier JSON invalide : " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function doImport(mode){
+  if(!pendingImportData) return;
+  if(mode === "replace"){
+    allData = {...pendingImportData};
+  } else {
+    allData = {...allData, ...pendingImportData};
+  }
+  save();
+  closeImportModal();
+  const nb = Object.keys(pendingImportData).length;
+  pendingImportData = null;
+  // Rafraîchir la vue
+  loadMonth();
+  if(currentTab==="tableau")    renderTableau();
+  if(currentTab==="transposed") renderTransposed();
+  if(currentTab==="graphiques") renderCharts();
+  showToast(`✓ ${nb} entrée(s) importée(s)`);
+}
+
+function closeImportModal(){
+  document.getElementById("import-modal").style.display = "none";
+  pendingImportData = null;
+}
+
+// Fermer le modal en cliquant en dehors
+document.getElementById("import-modal").addEventListener("click", e => {
+  if(e.target === document.getElementById("import-modal")) closeImportModal();
+});
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.style.display="none"; }, 3000);
+}
+
+/* ══ PWA ══ */
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e; document.getElementById("install-banner").style.display="block"; });
+if(/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone)
+  setTimeout(()=>{ document.getElementById("install-banner").style.display="block"; },5000);
+if("serviceWorker" in navigator){
+  const sw=`const C="pension-v4";self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(["./"])));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim();});self.addEventListener("fetch",e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"}))).catch(()=>{});
+}
+
+/* ══ BOOT ══ */
+loadStorage();
+try{ const t=localStorage.getItem("pension_theme"); if(t) applyTheme(t); }catch{}
+initSelectors();
+loadMonth();
+renderTableau();
+</script>
+</body>
+</html>
